@@ -10,7 +10,7 @@ const wpUrl = "https://fr.wikipedia.org/w/api.php";
 const wdUrl = "https://www.wikidata.org/w/api.php";
 
 // functions
-const log = a => console.log(a) || a;
+const log = a => console.log(a.name) || a;
 const logData = a => console.log(a.data) || a;
 
 const formatWikiText = text =>
@@ -72,8 +72,22 @@ const mapOnProperty = (prop, key, prev) =>
   ).then(all => {
     return all.map((res, i) => {
       const id = prev[i].data.wikibase_item;
-      prev[i].data[key] =
-        res.data.entities[id].claims[prop][0].mainsnak.datavalue.value.time;
+      //console.log(prev[i].name,res.data.entities[id].claims[prop]);
+      if(prev[i].name,res.data.entities[id].claims[prop]){
+        if (prev[i].name === "Pol Bury" && prop === "P135") {
+          for (let name in res.data.entities[id].claims) {
+            if (name === "P135") {
+              console.log(res.data.entities[id].claims[name][0].references)
+            }
+          }
+        }
+       
+        //console.log("tot",res.data.entities[id].claims[prop][0].mainsnak.datavalue.value)
+        prev[i].data[key] =
+        res.data.entities[id].claims[prop][0].mainsnak.datavalue.value;
+      }
+      // prev[i].data[key] =
+      // res.data.entities[id].claims[prop][0].mainsnak.datavalue.value.time;
       return prev[i];
     });
   });
@@ -111,7 +125,20 @@ urls
   .then(result => mapOnSection(0, "intro", result))
   .then(result => mapOnSection(1, "bio", result))
   .then(result => mapOnProperty("P569", "naissance", result))
+  .then(result => mapOnProperty("P19", "place", result))
+  .then(result => mapOnProperty("P570", "death", result))
+  .then(result => mapOnProperty("P135", "movement", result))
+  .then(result => mapOnProperty("P18", "image", result))
+  .then(result => result.map(a => {  
+    a.data.naissance = a.data.naissance && a.data.naissance.time;
+    a.data.death = a.data.death && a.data.death.time;
+    a.data.place = a.data.place && a.data.place.id;
+    a.data.movement = a.data.movement && a.data.movement.id;
+    console.log(a.data.image);
+    return a 
+  }))
   .then(result => fs.writeFileSync("./artists.json", JSON.stringify(result)));
+  // .catch(console.error('Erreur'));
 
 /*   axios
     .get("https://www.wikidata.org/w/api.php" + "?action=wbgetentities&ids=Q492909&props=labels|descriptions|claims|sitelinks/urls&languages=fr&formatversion=2&format=json")
